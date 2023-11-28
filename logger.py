@@ -22,14 +22,14 @@ import csv
 csv_create_file_timer = 1  # hours
 csv_datalog_freq = 0.97 #seconds
 history_length = 900  # seconds
-samples_per_channel = 50
+samples_per_channel = 10
 num_of_channels = 5
 
 def create_csv_file(file_name):
     with open(file_name, 'w', newline='') as csv_file:
         # Your CSV writing code here, for example:
         csv_writer = csv.writer(csv_file)
-        csv_writer.writerow(['Date/Time', 'Value'])
+        csv_writer.writerow(['Date/Time'] +  [f'Channel_{i}' for i in range(0, num_of_channels)])
 
     print(f"CSV file '{file_name}' created.")
     
@@ -82,17 +82,18 @@ while True:
     try:
         new_data = task.read(number_of_samples_per_channel=samples_per_channel)  # Read 50 samples
         timestamp = time.time()
-        data_buffer.extend(new_data)
-        time_buffer.extend([timestamp] * len(new_data))
+        data_buffer.extend(new_data[0])
+        time_buffer.extend([timestamp] * len(new_data[0]))
 
         time_diff = np.array(time_buffer) - time_buffer[-1]
         mask = time_diff > -history_length
         line.set_xdata(-time_diff[mask])
         line.set_ydata(np.array(data_buffer)[mask])
         value1 = data_buffer[-1]
-        print(value1)
+        #print(len(value1))
         now = dt.now()
-        current_data = [dt.now().strftime("%Y-%m-%d %H:%M:%S"), value1]
+        values = [new_data[i][-1] for i in range(0, num_of_channels)]
+        current_data = [dt.now().strftime("%Y-%m-%d %H:%M:%S")] + values
         ax.relim()
         ax.autoscale_view()
         plt.pause(0.01)  # Pause to allow the plot to update
