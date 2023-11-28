@@ -9,6 +9,7 @@ use of the Code is subject to the Sample Code License Terms which can be found a
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.widgets import Button
 import nidaqmx
 from nidaqmx.constants import AcquisitionType, TerminalConfiguration
 from collections import deque
@@ -20,7 +21,7 @@ from datetime import timedelta as td
 import csv
 
 csv_create_file_timer = 1  # hours
-csv_datalog_freq = 0.97 #seconds
+csv_datalog_freq = 0.97 # seconds
 history_length = 900  # seconds
 samples_per_channel = 10
 num_of_channels = 5
@@ -34,13 +35,6 @@ def create_csv_file(file_name):
     print(f"CSV file '{file_name}' created.")
     
 
-# def log_data(f_name):
-#     global current_data
-#     with open(f_name, 'a', newline='') as csv_file:
-#         csv_writer = csv.writer(csv_file)
-#         while True:
-#             csv_writer.writerow(current_data)
-#             time.sleep(1)
 
 def log_data(f_name, data):
     with open(f_name, 'a', newline='') as csv_file:
@@ -68,22 +62,52 @@ num_samples = int(task.timing.samp_clk_rate * history_length)
 time_values = np.linspace(-history_length, 0, num_samples)
 data_buffer = deque(maxlen=num_samples)
 time_buffer = deque(maxlen=num_samples)
+plt_channel = 0
+def clear_buffer():
+    global data_buffer, time_buffer
+    data_buffer = deque(maxlen=num_samples)
+    time_buffer = deque(maxlen=num_samples)
+def next_button(command):
+    clear_buffer()
+    global plt_channel, ax
+    if plt_channel != num_of_channels + 1:
+        plt_channel = plt_channel + 1
+    else:
+        plt_channel = 0
+    ax.set_title(f'F{plt_channel + 1}')
 
+def prev_button(command):
+    global plt_channel, ax
+    clear_buffer()
+    if not plt_channel:
+        plt_channel = num_of_channels - 1
+    else:
+        plt_channel = plt_channel - 1
+    ax.set_title(f'F{plt_channel + 1}')
 # Create the plot
 plt.ion()  # Enable interactive mode for dynamic updating
 fig, ax = plt.subplots()
 line, = ax.plot(time_values, np.zeros(num_samples))
 ax.set_xlabel('Time (s)')
 ax.set_ylabel('Voltage (V)')
-ax.set_title('Analog Input from Dev1/ai0')
+ax.set_title(f'F{plt_channel + 1}')
 task.start()
+
+nxt_button_ax = plt.axes([0.7, 0.9, 0.1, 0.04])  # [left, bottom, width, height]
+nxt_button = Button(nxt_button_ax, 'Next')
+nxt_button.on_clicked(next_button)
+
+prv_button_ax = plt.axes([0.85, 0.9, 0.1, 0.04])  # [left, bottom, width, height]
+prv_button = Button(prv_button_ax, 'Previous')
+prv_button.on_clicked(prev_button)
+
 
 while True:
     try:
         new_data = task.read(number_of_samples_per_channel=samples_per_channel)  # Read 50 samples
         timestamp = time.time()
-        data_buffer.extend(new_data[0])
-        time_buffer.extend([timestamp] * len(new_data[0]))
+        data_buffer.extend(new_data[plt_channel])
+        time_buffer.extend([timestamp] * len(new_data[plt_channel]))
 
         time_diff = np.array(time_buffer) - time_buffer[-1]
         mask = time_diff > -history_length
