@@ -17,9 +17,13 @@ import time
 import os
 from datetime import datetime as dt
 from datetime import timedelta as td
-import threading
 import csv
 
+csv_create_file_timer = 1  # hours
+csv_datalog_freq = 0.97 #seconds
+history_length = 900  # seconds
+samples_per_channel = 50
+num_of_channels = 5
 
 def create_csv_file(file_name):
     with open(file_name, 'w', newline='') as csv_file:
@@ -55,11 +59,11 @@ create_csv_file(file_name)
 
 # Configure NI DAQmx settings
 task = nidaqmx.Task()
-task.ai_channels.add_ai_voltage_chan("Dev1/ai0", terminal_config=TerminalConfiguration.RSE)
+for i in range(0, num_of_channels):
+    task.ai_channels.add_ai_voltage_chan(f"Dev1/ai{i}", terminal_config=TerminalConfiguration.RSE)
 task.timing.cfg_samp_clk_timing(rate=100, sample_mode=AcquisitionType.CONTINUOUS)
 
 # Initialize variables for data storage and plotting
-history_length = 900  # seconds
 num_samples = int(task.timing.samp_clk_rate * history_length)
 time_values = np.linspace(-history_length, 0, num_samples)
 data_buffer = deque(maxlen=num_samples)
@@ -72,13 +76,11 @@ line, = ax.plot(time_values, np.zeros(num_samples))
 ax.set_xlabel('Time (s)')
 ax.set_ylabel('Voltage (V)')
 ax.set_title('Analog Input from Dev1/ai0')
-#log_thread = threading.Thread(target=log_data,args=(file_name,))
-#log_thread.start()
 task.start()
 
 while True:
     try:
-        new_data = task.read(number_of_samples_per_channel=50)  # Read 50 samples
+        new_data = task.read(number_of_samples_per_channel=samples_per_channel)  # Read 50 samples
         timestamp = time.time()
         data_buffer.extend(new_data)
         time_buffer.extend([timestamp] * len(new_data))
@@ -94,16 +96,14 @@ while True:
         ax.relim()
         ax.autoscale_view()
         plt.pause(0.01)  # Pause to allow the plot to update
-        if dt.now() - second_timer >= td(seconds=1):
+        if dt.now() - second_timer >= td(seconds=csv_datalog_freq):
             log_data(file_name, current_data)
             second_timer = dt.now()
-        if dt.now() - current_time >= td(hours=1):
+        if dt.now() - current_time >= td(hours=csv_create_file_timer):
             current_time = dt.now()
             time_str = current_time.strftime("%Y%m%d_%H%M%S")
             file_name = f"{folder_path}/data_{time_str}.csv"
             create_csv_file(file_name)
-            #log_thread.join()
-            #log_thread.start()
         
         
         
