@@ -22,13 +22,14 @@ csv_datalog_freq = 0.47 # seconds
 history_length = 900  # seconds
 num_of_channels = 5
 samples_per_channel = 25
+proccessed_Fs = ['F1 = N2','F2 = SF6','F3 = SO2','F4 = TOR','F5 = EVAC']
 
 def proccess_channel(data):
     process_1 = 1.0646 * data[0] + 0.0013
     process_2 = 10.468 * data[1] + 0.8423
     process_3 = 6.8967 * data[2] + 0.185
-    process_4 = 21.468 * data[3] - 0.3443
-    process_5 = 20.00 * data[4]
+    process_4 = 20.00 * data[3]
+    process_5 = 21.468 * data[4] - 0.3443
     
     return process_1, process_2, process_3, process_4, process_5
 
@@ -37,7 +38,7 @@ def create_csv_file(file_name):
     with open(file_name, 'w', newline='') as csv_file:
         # Your CSV writing code here, for example:
         csv_writer = csv.writer(csv_file)
-        csv_writer.writerow(['Date/Time'] +  [f'Channel_{i}' for i in range(0, num_of_channels)])
+        csv_writer.writerow(['Date/Time'] +  [f'Channel_{i}' for i in range(0, num_of_channels)] + proccessed_Fs)
 
     print(f"CSV file '{file_name}' created.")
 
