@@ -1,11 +1,8 @@
-"""
-Example: DAQmx-Python Analog Input Acquisition and Plot With History (NI 2023)
-Author: Davit Danielyan
-
-DISCLAIMER: The attached Code is provided As Is. It has not been tested or validated as a product, for use in a
-deployed application or system, or for use in hazardous environments. You assume all risks for use of the Code and
-use of the Code is subject to the Sample Code License Terms which can be found at: http://ni.com/samplecodelicense
-"""
+'''
+Authors: Yoel Ghebrecristos and Alvin La
+Institution: University of California Irvine
+Department: Earth Science
+'''
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -21,10 +18,20 @@ from datetime import timedelta as td
 import csv
 
 csv_create_file_timer = 1  # hours
-csv_datalog_freq = 0.97 # seconds
+csv_datalog_freq = 0.47 # seconds
 history_length = 900  # seconds
-samples_per_channel = 10
 num_of_channels = 5
+samples_per_channel = 25
+
+def proccess_channel():
+    process_1 = None
+    process_2 = None
+    process_3 = None
+    process_4 = None
+    process_5 = None
+    
+    return process_1, process_2, process_3, process_4, process_5
+
 
 def create_csv_file(file_name):
     with open(file_name, 'w', newline='') as csv_file:
@@ -33,13 +40,13 @@ def create_csv_file(file_name):
         csv_writer.writerow(['Date/Time'] +  [f'Channel_{i}' for i in range(0, num_of_channels)])
 
     print(f"CSV file '{file_name}' created.")
-    
+
 
 
 def log_data(f_name, data):
     with open(f_name, 'a', newline='') as csv_file:
         csv_writer = csv.writer(csv_file)
-        csv_writer.writerow(data)        
+        csv_writer.writerow(data)
 folder_path = "csv_folder"
 if not os.path.exists(folder_path):
     os.makedirs(folder_path)
@@ -63,14 +70,16 @@ time_values = np.linspace(-history_length, 0, num_samples)
 data_buffer = deque(maxlen=num_samples)
 time_buffer = deque(maxlen=num_samples)
 plt_channel = 0
+
 def clear_buffer():
     global data_buffer, time_buffer
     data_buffer = deque(maxlen=num_samples)
     time_buffer = deque(maxlen=num_samples)
+    
 def next_button(command):
     clear_buffer()
     global plt_channel, ax
-    if plt_channel != num_of_channels + 1:
+    if plt_channel != num_of_channels - 1:
         plt_channel = plt_channel + 1
     else:
         plt_channel = 0
@@ -93,11 +102,11 @@ ax.set_ylabel('Voltage (V)')
 ax.set_title(f'F{plt_channel + 1}')
 task.start()
 
-nxt_button_ax = plt.axes([0.7, 0.9, 0.1, 0.04])  # [left, bottom, width, height]
+nxt_button_ax = plt.axes([0.85, 0.9, 0.1, 0.04])  # [left, bottom, width, height]
 nxt_button = Button(nxt_button_ax, 'Next')
 nxt_button.on_clicked(next_button)
 
-prv_button_ax = plt.axes([0.85, 0.9, 0.1, 0.04])  # [left, bottom, width, height]
+prv_button_ax = plt.axes([0.7, 0.9, 0.1, 0.04])  # [left, bottom, width, height]
 prv_button = Button(prv_button_ax, 'Previous')
 prv_button.on_clicked(prev_button)
 
