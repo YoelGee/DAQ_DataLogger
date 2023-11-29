@@ -23,12 +23,12 @@ history_length = 900  # seconds
 num_of_channels = 5
 samples_per_channel = 25
 
-def proccess_channel():
-    process_1 = None
-    process_2 = None
-    process_3 = None
-    process_4 = None
-    process_5 = None
+def proccess_channel(data):
+    process_1 = 1.0646 * data[0] + 0.0013
+    process_2 = 10.468 * data[1] + 0.8423
+    process_3 = 6.8967 * data[2] + 0.185
+    process_4 = 21.468 * data[3] - 0.3443
+    process_5 = 20.00 * data[4]
     
     return process_1, process_2, process_3, process_4, process_5
 
@@ -114,19 +114,18 @@ prv_button.on_clicked(prev_button)
 while True:
     try:
         new_data = task.read(number_of_samples_per_channel=samples_per_channel)  # Read 50 samples
+        values = [new_data[i][-1] for i in range(0, num_of_channels)]
+        proccessed_values = proccess_channel(values)
         timestamp = time.time()
-        data_buffer.extend(new_data[plt_channel])
-        time_buffer.extend([timestamp] * len(new_data[plt_channel]))
+        data_buffer.extend(proccessed_values[plt_channel])
+        time_buffer.extend([timestamp] * len(proccessed_values[plt_channel]))
 
         time_diff = np.array(time_buffer) - time_buffer[-1]
         mask = time_diff > -history_length
         line.set_xdata(-time_diff[mask])
         line.set_ydata(np.array(data_buffer)[mask])
-        value1 = data_buffer[-1]
-        #print(len(value1))
         now = dt.now()
-        values = [new_data[i][-1] for i in range(0, num_of_channels)]
-        current_data = [dt.now().strftime("%Y-%m-%d %H:%M:%S")] + values
+        current_data = [dt.now().strftime("%Y-%m-%d %H:%M:%S")] + values + proccessed_values
         ax.relim()
         ax.autoscale_view()
         plt.pause(0.01)  # Pause to allow the plot to update
