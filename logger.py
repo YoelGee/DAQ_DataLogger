@@ -21,17 +21,17 @@ csv_create_file_timer = 1  # hours
 csv_datalog_freq = 0.47 # seconds
 history_length = 900  # seconds
 num_of_channels = 5
-samples_per_channel = 25
+samples_per_channel = 50
 proccessed_Fs = ['F1 = N2','F2 = SF6','F3 = SO2','F4 = TOR','F5 = EVAC']
 
 def proccess_channel(data):
-    process_1 = 1.0646 * data[0] + 0.0013
-    process_2 = 10.468 * data[1] + 0.8423
-    process_3 = 6.8967 * data[2] + 0.185
-    process_4 = 20.00 * data[3]
-    process_5 = 21.468 * data[4] - 0.3443
+    process_1 = [1.0646 * x + 0.0013 for x in data[0]]
+    process_2 = [10.468 * x + 0.8423 for x in data[0]]
+    process_3 = [6.8967 * x + 0.185 for x in data[0]]
+    process_4 = [20.00 * x for x in data[0]]
+    process_5 = [21.468 * x- 0.3443 for x in data[0]]
     
-    return process_1, process_2, process_3, process_4, process_5
+    return [process_1, process_2, process_3, process_4, process_5]
 
 
 def create_csv_file(file_name):
@@ -116,17 +116,19 @@ while True:
     try:
         new_data = task.read(number_of_samples_per_channel=samples_per_channel)  # Read 50 samples
         values = [new_data[i][-1] for i in range(0, num_of_channels)]
-        proccessed_values = proccess_channel(values)
+        processed_data = proccess_channel(new_data)
+        processed_values = [processed_data[i][-1] for i in range(0, num_of_channels)]
+        #print(processed_data)
         timestamp = time.time()
-        data_buffer.extend(proccessed_values[plt_channel])
-        time_buffer.extend([timestamp] * len(proccessed_values[plt_channel]))
+        data_buffer.extend(processed_data[plt_channel])
+        time_buffer.extend([timestamp] * len(processed_data[plt_channel]))
 
         time_diff = np.array(time_buffer) - time_buffer[-1]
         mask = time_diff > -history_length
         line.set_xdata(-time_diff[mask])
         line.set_ydata(np.array(data_buffer)[mask])
         now = dt.now()
-        current_data = [dt.now().strftime("%Y-%m-%d %H:%M:%S")] + values + proccessed_values
+        current_data = [dt.now().strftime("%Y-%m-%d %H:%M:%S")] + values + processed_values
         ax.relim()
         ax.autoscale_view()
         plt.pause(0.01)  # Pause to allow the plot to update
@@ -135,7 +137,7 @@ while True:
             second_timer = dt.now()
         if dt.now() - current_time >= td(hours=csv_create_file_timer):
             current_time = dt.now()
-            time_str = current_time.strftime("%Y%m%d_%H%M%S")
+            time_str = current_time.strftime("%Y_%m_%d_%H_%M_%S")
             file_name = f"{folder_path}/data_{time_str}.csv"
             create_csv_file(file_name)
         
