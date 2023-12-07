@@ -8,7 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Button
 import nidaqmx
-from nidaqmx.constants import AcquisitionType, TerminalConfiguration
+from nidaqmx.constants import AcquisitionType, TerminalConfiguration, LineGrouping
 from collections import deque
 import pandas as pd
 import time
@@ -16,12 +16,47 @@ import os
 from datetime import datetime as dt
 from datetime import timedelta as td
 import csv
+import threading
+
+
+'''
+****************** INSTRUCTIONS ******************
+
+csv_create_file_timer - How often a new CSV file is created
+csv_datalog_freq - how often the datas are logged into csv file (default 2points every second )
+history_length - how much information is displayed over a certain amount of time (900s = 15 min)
+num_of_channels - how many analog channels we are using on the device
+samples_per_channel - number of samples device returns every interval
+
+valve1_timer_on - ontrolls the time on for valve 1
+valve1_timer_off - controlls the time off for valve 1 
+valve2_timer_on - controlls the time on for valve 2 
+valve2_timer_off - controlls the time off for valve 2 
+valve1_state - initial valve 1 state
+valve2_state - initial valve 2 state
+
+****************************************************
+'''
 
 csv_create_file_timer = 1  # hours
 csv_datalog_freq = 0.47 # seconds
 history_length = 900  # seconds
 num_of_channels = 5
 samples_per_channel = 50
+
+num_of_valves = 3
+valve1_timer_on = 2 #minutes
+valve1_timer_off = 3 #minutes
+valve2_timer_on = 1 #minutes
+valve2_timer_off = 5 #minutes
+valve3_timer_on = 1 #minutes
+valve3_timer_off = 5 #minutes
+valve4_timer_on = 1 #minutes
+valve4_timer_off = 5 #minutes
+valve1_state = False #initial valve state
+valve2_state = True #initial valve state
+valve3_state = True #initial valve state
+valve4_state = True #initial valve state
 proccessed_Fs = ['F1 = N2','F2 = SF6','F3 = SO2','F4 = TOR','F5 = EVAC']
 
 def proccess_channel(data):
@@ -33,6 +68,15 @@ def proccess_channel(data):
     
     return [process_1, process_2, process_3, process_4, process_5]
 
+def valve_state_conversion(valve1, valve2, valve3, valve4):
+        binary_array = [valve1, 0, valve2, 0, valve3, 0, valve4, 0]
+        #print(binary_array)
+        decimal_value = 0
+        for i in range(len(binary_array)):
+            bit = binary_array[i]
+            decimal_value += bit * (2 ** i)
+        #print(decimal_value)
+        return decimal_value
 
 def create_csv_file(file_name):
     with open(file_name, 'w', newline='') as csv_file:
@@ -64,7 +108,6 @@ task = nidaqmx.Task()
 for i in range(0, num_of_channels):
     task.ai_channels.add_ai_voltage_chan(f"Dev1/ai{i}", terminal_config=TerminalConfiguration.RSE)
 task.timing.cfg_samp_clk_timing(rate=100, sample_mode=AcquisitionType.CONTINUOUS)
-
 # Initialize variables for data storage and plotting
 num_samples = int(task.timing.samp_clk_rate * history_length)
 time_values = np.linspace(-history_length, 0, num_samples)
@@ -85,6 +128,8 @@ def next_button(command):
     else:
         plt_channel = 0
     ax.set_title(f'F{plt_channel + 1}')
+    ax.set_ylabel(f'{proccessed_Fs[plt_channel]}')
+    
 
 def prev_button(command):
     global plt_channel, ax
@@ -94,15 +139,16 @@ def prev_button(command):
     else:
         plt_channel = plt_channel - 1
     ax.set_title(f'F{plt_channel + 1}')
+    ax.set_ylabel(f'{proccessed_Fs[plt_channel]}')
+
 # Create the plot
 plt.ion()  # Enable interactive mode for dynamic updating
 fig, ax = plt.subplots()
 line, = ax.plot(time_values, np.zeros(num_samples))
 ax.set_xlabel('Time (s)')
-ax.set_ylabel('Voltage (V)')
+ax.set_ylabel(f'{proccessed_Fs[plt_channel]}')
 ax.set_title(f'F{plt_channel + 1}')
 task.start()
-
 nxt_button_ax = plt.axes([0.85, 0.9, 0.1, 0.04])  # [left, bottom, width, height]
 nxt_button = Button(nxt_button_ax, 'Next')
 nxt_button.on_clicked(next_button)
@@ -110,8 +156,20 @@ nxt_button.on_clicked(next_button)
 prv_button_ax = plt.axes([0.7, 0.9, 0.1, 0.04])  # [left, bottom, width, height]
 prv_button = Button(prv_button_ax, 'Previous')
 prv_button.on_clicked(prev_button)
-
-
+# valve1_timer = dt.now()
+# valve2_timer = dt.now()
+valve_start_timer = [dt.now(), dt.now(), dt.now()]
+valve_duration = [valve1_timer_on if valve1_state else valve1_timer_off, 
+                  valve2_timer_on if valve2_state else valve2_timer_off,
+                  valve3_timer_on if valve3_state else valve3_timer_off]
+valve_states = [valve1_state if num_of_valves > 0 else False, 
+                valve2_state if num_of_valves > 1 else False, 
+                valve3_state if num_of_valves > 2 else False, 
+                valve4_state if num_of_valves > 3 else False]
+valve_timer_on = [valve1_timer_on, valve2_timer_on, valve3_timer_on, valve4_timer_on]
+valve_timer_off = [valve1_timer_off, valve2_timer_off, valve2_timer_off, valve3_timer_off]
+changed_state = True
+print(dt.now(), "Starting time")
 while True:
     try:
         new_data = task.read(number_of_samples_per_channel=samples_per_channel)  # Read 50 samples
@@ -140,8 +198,32 @@ while True:
             time_str = current_time.strftime("%Y_%m_%d_%H_%M_%S")
             file_name = f"{folder_path}/data_{time_str}.csv"
             create_csv_file(file_name)
-        
-        
+        for i in range(0, num_of_valves):
+            if dt.now() - valve_start_timer[i] >= td(minutes=valve_duration[i]):
+                valve_states[i] = not valve_states[i]
+                valve_duration[i] = valve_timer_on[i] if valve_states[i] else valve_timer_off[i]
+                valve_start_timer[i] = dt.now()
+                changed_state = True
+                print(dt.now(), f'Switching Valve{i+1}')
+        if changed_state:
+            changed_state = False
+            task.stop()
+            task.close()
+            task = nidaqmx.Task()
+            task.do_channels.add_do_chan(
+                    "Dev1/port1/line0:7", line_grouping=LineGrouping.CHAN_FOR_ALL_LINES)
+            task.start()
+            task.write(valve_state_conversion(valve_states[0], 
+                                              valve_states[1] , 
+                                              valve_states[2], 
+                                              valve_states[3]), auto_start=True)
+            task.stop()
+            task.close()
+            task = nidaqmx.Task()
+
+            for i in range(0, num_of_channels):
+                task.ai_channels.add_ai_voltage_chan(f"Dev1/ai{i}", terminal_config=TerminalConfiguration.RSE)
+            task.timing.cfg_samp_clk_timing(rate=100, sample_mode=AcquisitionType.CONTINUOUS)
         
     except (KeyboardInterrupt,SystemExit):
         task.stop()
