@@ -15,6 +15,27 @@ import os
 from datetime import datetime as dt
 from datetime import timedelta as td
 import csv
+import threading
+
+
+'''
+****************** INSTRUCTIONS ******************
+
+csv_create_file_timer - How often a new CSV file is created
+csv_datalog_freq - how often the datas are logged into csv file (default 2points every second )
+history_length - how much information is displayed over a certain amount of time (900s = 15 min)
+num_of_channels - how many analog channels we are using on the device
+samples_per_channel - number of samples device returns every interval
+
+valve1_timer_on - ontrolls the time on for valve 1
+valve1_timer_off - controlls the time off for valve 1 
+valve2_timer_on - controlls the time on for valve 2 
+valve2_timer_off - controlls the time off for valve 2 
+valve1_state - initial valve 1 state
+valve2_state - initial valve 2 state
+
+****************************************************
+'''
 
 
 
