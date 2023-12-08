@@ -61,8 +61,10 @@ valve2_state - initial valve 2 state
 csv_create_file_timer = 1  # hours
 csv_datalog_freq = 0.47 # seconds
 history_length = 900  # seconds
-num_of_channels = 5
 samples_per_channel = 50
+
+num_of_channels = 5 #indicate number of channels
+analog_chan = [0, 1, 2, 3, 5, 8] #indicate which channels are in use
 
 num_of_valves = 2  # indicate num of valves in use
 
@@ -135,7 +137,7 @@ create_csv_file(file_name)
 # Configure NI DAQmx settings
 task = nidaqmx.Task()
 for i in range(0, num_of_channels):
-    task.ai_channels.add_ai_voltage_chan(f"Dev1/ai{i}", terminal_config=TerminalConfiguration.RSE)
+    task.ai_channels.add_ai_voltage_chan(f"Dev1/ai{analog_chan[i]}", terminal_config=TerminalConfiguration.RSE)
 task.timing.cfg_samp_clk_timing(rate=100, sample_mode=AcquisitionType.CONTINUOUS)
 # Initialize variables for data storage and plotting
 num_samples = int(task.timing.samp_clk_rate * history_length)
@@ -251,7 +253,7 @@ while True:
             task = nidaqmx.Task()
 
             for i in range(0, num_of_channels):
-                task.ai_channels.add_ai_voltage_chan(f"Dev1/ai{i}", terminal_config=TerminalConfiguration.RSE)
+                task.ai_channels.add_ai_voltage_chan(f"Dev1/ai{analog_chan[i]}", terminal_config=TerminalConfiguration.RSE)
             task.timing.cfg_samp_clk_timing(rate=100, sample_mode=AcquisitionType.CONTINUOUS)
         
     except (KeyboardInterrupt,SystemExit):
