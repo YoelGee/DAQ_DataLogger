@@ -64,7 +64,7 @@ history_length = 900  # seconds
 samples_per_channel = 50
 
 num_of_channels = 5 #indicate number of channels
-analog_chan = [0, 1, 2, 3, 5, 8] #indicate which channels are in use
+analog_chan = [0, 1, 2, 4, 7] #indicate which channels are in use
 
 num_of_valves = 2  # indicate num of valves in use
 
@@ -88,7 +88,7 @@ valve4_state = False  # initial valve state
 valve4_timer_on = 1  # minutes
 valve4_timer_off = 5  # minutes
 
-proccessed_Fs = ['F1 = N2','F2 = SF6','F3 = SO2','F4 = TOR','F5 = EVAC']
+proccessed_Fs = ['F1 = N2','F2 = SF6','F3 = SO2','F4 = EVAC','F5 = TOR']
 
 def proccess_channel(data):
     process_1 = [1.0646 * x + 0.0013 for x in data[0]] # N_2
