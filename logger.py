@@ -92,10 +92,10 @@ proccessed_Fs = ['F1 = N2','F2 = SF6','F3 = SO2','F4 = EVAC','F5 = TOR']
 
 def proccess_channel(data):
     process_1 = [1.0646 * x + 0.0013 for x in data[0]] # N_2
-    process_2 = [21.468 * x - 0.3443 for x in data[0]] # SF_6
-    process_3 = [10.468 * x + 0.8423 for x in data[0]] # SO_2
-    process_4 = [6.8967 * x + 0.185 for x in data[0]] # EVAC
-    process_5 = [20.00 * x for x in data[0]]
+    process_2 = [21.468 * x - 0.3443 for x in data[1]] # SF_6
+    process_3 = [10.468 * x + 0.8423 for x in data[2]] # SO_2
+    process_4 = [6.8967 * x + 0.185 for x in data[3]] # EVAC
+    process_5 = [20.00 * x for x in data[4]]
     
     return [process_1, process_2, process_3, process_4, process_5]
 
