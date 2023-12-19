@@ -64,9 +64,9 @@ history_length = 900  # seconds
 samples_per_channel = 50
 
 num_of_channels = 5 #indicate number of channels
-analog_chan = [0, 1, 2, 4, 7] #indicate which channels are in use
+analog_chan = [0, 1, 2, 3, 4, 5, 6, 7] #indicate which channels are in use
 
-num_of_valves = 2  # indicate num of valves in use
+num_of_valves = 3  # indicate num of valves in use
 
 #### VALVE 1 ####### (Pneumatic valve)
 valve1_state = False  # initial valve state
@@ -81,23 +81,25 @@ valve2_timer_off = 4.5  # minutes
 #### VALVE 3 #######
 valve3_state = False  # initial valve state
 valve3_timer_on = 1  # minutes
-valve3_timer_off = 5  # minutes
+valve3_timer_off = 9  # minutes
 
 #### VALVE 4 #######
 valve4_state = False  # initial valve state
 valve4_timer_on = 1  # minutes
 valve4_timer_off = 5  # minutes
 
-proccessed_Fs = ['F1 = N2','F2 = SF6','F3 = SO2','F4 = EVAC','F5 = TOR']
+proccessed_Fs = ['F1 = N2','F2 = SF6','F3 = SO2','F4 = EVAC','F5 = TOR', 'F6 = ', 'F7 = ' , 'F8 = ']
 
 def proccess_channel(data):
     process_1 = [1.0646 * x + 0.0013 for x in data[0]] # N_2
     process_2 = [21.468 * x - 0.3443 for x in data[1]] # SF_6
-    process_3 = [10.468 * x + 0.8423 for x in data[2]] # SO_2
-    process_4 = [6.8967 * x + 0.185 for x in data[3]] # EVAC
-    process_5 = [20.00 * x for x in data[4]]
-    
-    return [process_1, process_2, process_3, process_4, process_5]
+    process_3 = [x for x in data[3]]
+    process_4 = [x for x in data[6]]
+    process_5 = [6.8967 * x + 0.185 for x in data[4]] # EVAC
+    process_6 = [10.468 * x + 0.8423 for x in data[5]] # SO_2
+    process_7 = [x for x in data[6]]
+    process_8 = [20.00 * x for x in data[7]] # TOR
+    return [process_1, process_2, process_3, process_4, process_5, process_6, process_7, process_8]
 
 def valve_state_conversion(valve1, valve2, valve3, valve4):
         binary_array = [valve1, 0, valve2, 0, valve3, 0, valve4, 0]
@@ -232,6 +234,7 @@ while True:
         for i in range(0, num_of_valves):
             if dt.now() - valve_start_timer[i] >= td(minutes=valve_duration[i]):
                 valve_states[i] = not valve_states[i]
+                valve1_state[1] = False ############################### KEEPS VALVE 2 ALWAYS OFF
                 valve_duration[i] = valve_timer_on[i] if valve_states[i] else valve_timer_off[i]
                 valve_start_timer[i] = dt.now()
                 changed_state = True
@@ -245,7 +248,7 @@ while True:
                     "Dev1/port1/line0:7", line_grouping=LineGrouping.CHAN_FOR_ALL_LINES)
             task.start()
             task.write(valve_state_conversion(valve_states[0], 
-                                              valve_states[1] , 
+                                              valve_states[1], 
                                               valve_states[2], 
                                               valve_states[3]), auto_start=True)
             task.stop()
