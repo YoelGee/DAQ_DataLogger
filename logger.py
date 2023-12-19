@@ -63,10 +63,11 @@ csv_datalog_freq = 0.47 # seconds
 history_length = 900  # seconds
 samples_per_channel = 50
 
-num_of_channels = 5 #indicate number of channels
+#num_of_channels = 5 #indicate number of channels
 analog_chan = [0, 1, 2, 3, 4, 5, 6, 7] #indicate which channels are in use
 
-num_of_valves = 3  # indicate num of valves in use
+#num_of_valves = 3  # indicate num of valves in use
+valve_in_use = [1, 3]
 
 #### VALVE 1 ####### (Pneumatic valve)
 valve1_state = False  # initial valve state
@@ -115,7 +116,7 @@ def create_csv_file(file_name):
     with open(file_name, 'w', newline='') as csv_file:
         # Your CSV writing code here, for example:
         csv_writer = csv.writer(csv_file)
-        csv_writer.writerow(['Date/Time'] +  [f'Channel_{i}' for i in range(0, num_of_channels)] + proccessed_Fs)
+        csv_writer.writerow(['Date/Time'] +  [f'Channel_{i}' for i in range(0, len(analog_chan))] + proccessed_Fs)
 
     print(f"CSV file '{file_name}' created.")
 
@@ -138,7 +139,7 @@ create_csv_file(file_name)
 
 # Configure NI DAQmx settings
 task = nidaqmx.Task()
-for i in range(0, num_of_channels):
+for i in range(0, len(analog_chan)):
     task.ai_channels.add_ai_voltage_chan(f"Dev1/ai{analog_chan[i]}", terminal_config=TerminalConfiguration.RSE)
 task.timing.cfg_samp_clk_timing(rate=100, sample_mode=AcquisitionType.CONTINUOUS)
 # Initialize variables for data storage and plotting
@@ -156,7 +157,7 @@ def clear_buffer():
 def next_button(command):
     clear_buffer()
     global plt_channel, ax
-    if plt_channel != num_of_channels - 1:
+    if plt_channel != len(analog_chan) - 1:
         plt_channel = plt_channel + 1
     else:
         plt_channel = 0
@@ -168,7 +169,7 @@ def prev_button(command):
     global plt_channel, ax
     clear_buffer()
     if not plt_channel:
-        plt_channel = num_of_channels - 1
+        plt_channel = len(analog_chan) - 1
     else:
         plt_channel = plt_channel - 1
     ax.set_title(f'F{plt_channel + 1}')
@@ -194,11 +195,12 @@ prv_button.on_clicked(prev_button)
 valve_start_timer = [dt.now(), dt.now(), dt.now()]
 valve_duration = [valve1_timer_on if valve1_state else valve1_timer_off, 
                   valve2_timer_on if valve2_state else valve2_timer_off,
-                  valve3_timer_on if valve3_state else valve3_timer_off]
-valve_states = [valve1_state if num_of_valves > 0 else False, 
-                valve2_state if num_of_valves > 1 else False, 
-                valve3_state if num_of_valves > 2 else False, 
-                valve4_state if num_of_valves > 3 else False]
+                  valve3_timer_on if valve3_state else valve3_timer_off,
+                  valve4_timer_on if valve4_state else valve4_timer_off]
+valve_states = [valve1_state if len(valve_in_use) > 0 else False, 
+                valve2_state if len(valve_in_use) > 1 else False, 
+                valve3_state if len(valve_in_use) > 2 else False, 
+                valve4_state if len(valve_in_use) > 3 else False]
 valve_timer_on = [valve1_timer_on, valve2_timer_on, valve3_timer_on, valve4_timer_on]
 valve_timer_off = [valve1_timer_off, valve2_timer_off, valve2_timer_off, valve3_timer_off]
 changed_state = True
@@ -206,9 +208,9 @@ print(dt.now(), "Starting time")
 while True:
     try:
         new_data = task.read(number_of_samples_per_channel=samples_per_channel)  # Read 50 samples
-        values = [new_data[i][-1] for i in range(0, num_of_channels)]
+        values = [new_data[i][-1] for i in range(0, len(analog_chan))]
         processed_data = proccess_channel(new_data)
-        processed_values = [processed_data[i][-1] for i in range(0, num_of_channels)]
+        processed_values = [processed_data[i][-1] for i in range(0, len(analog_chan))]
         #print(processed_data)
         timestamp = time.time()
         data_buffer.extend(processed_data[plt_channel])
@@ -231,14 +233,13 @@ while True:
             time_str = current_time.strftime("%Y_%m_%d_%H_%M_%S")
             file_name = f"{folder_path}/data_{time_str}.csv"
             create_csv_file(file_name)
-        for i in range(0, num_of_valves):
-            if dt.now() - valve_start_timer[i] >= td(minutes=valve_duration[i]):
-                valve_states[i] = not valve_states[i]
-                valve1_state[1] = False ############################### KEEPS VALVE 2 ALWAYS OFF
-                valve_duration[i] = valve_timer_on[i] if valve_states[i] else valve_timer_off[i]
-                valve_start_timer[i] = dt.now()
+        for i in range(0, len(valve_in_use)):
+            if dt.now() - valve_start_timer[valve_in_use[i] - 1] >= td(minutes=valve_duration[i]):
+                valve_states[valve_in_use[i] - 1] = not valve_states[i]
+                valve_duration[valve_in_use[i] - 1] = valve_timer_on[valve_in_use[i] - 1] if valve_states[valve_in_use[i] - 1] else valve_timer_off[valve_in_use[i] - 1]
+                valve_start_timer[valve_in_use[i] - 1] = dt.now()
                 changed_state = True
-                print(dt.now(), f'Switching Valve{i+1}')
+                print(dt.now(), f'Switching Valve{valve_in_use[i]}')
         if changed_state:
             changed_state = False
             task.stop()
@@ -255,7 +256,7 @@ while True:
             task.close()
             task = nidaqmx.Task()
 
-            for i in range(0, num_of_channels):
+            for i in range(0, len(analog_chan)):
                 task.ai_channels.add_ai_voltage_chan(f"Dev1/ai{analog_chan[i]}", terminal_config=TerminalConfiguration.RSE)
             task.timing.cfg_samp_clk_timing(rate=100, sample_mode=AcquisitionType.CONTINUOUS)
         
