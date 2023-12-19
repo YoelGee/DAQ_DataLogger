@@ -58,36 +58,40 @@ valve2_state - initial valve 2 state
 ****************************************************
 '''
 
+import json
+with open('settings.json') as f: 
+    json_data = json.load(f) 
+
 csv_create_file_timer = 1  # hours
 csv_datalog_freq = 0.47 # seconds
 history_length = 900  # seconds
 samples_per_channel = 50
 
 #num_of_channels = 5 #indicate number of channels
-analog_chan = [0, 1, 2, 3, 4, 5, 6, 7] #indicate which channels are in use
+analog_chan = json_data['analog_channels'] #indicate which channels are in use
 
 #num_of_valves = 3  # indicate num of valves in use
-valve_in_use = [1, 3]
+valve_in_use = json_data['valves_in_use']
 
 #### VALVE 1 ####### (Pneumatic valve)
-valve1_state = False  # initial valve state
-valve1_timer_on = 5  # minutes
-valve1_timer_off = 55  # minutes
+valve1_state = json_data['valve1']['initial_state']  # initial valve state
+valve1_timer_on = json_data['valve1']['time_on']   # minutes
+valve1_timer_off = json_data['valve1']['time_off']   # minutes
 
 #### VALVE 2 ####### (Diversion/Suckback/SO2)
-valve2_state = False  # initial valve state
-valve2_timer_on = 0.5  # minutes
-valve2_timer_off = 4.5  # minutes
+valve2_state = json_data['valve2']['initial_state']  # initial valve state
+valve2_timer_on = json_data['valve2']['time_on']   # minutes
+valve2_timer_off = json_data['valve2']['time_off']   # minutes
 
 #### VALVE 3 #######
-valve3_state = False  # initial valve state
-valve3_timer_on = 1  # minutes
-valve3_timer_off = 9  # minutes
+valve3_state = json_data['valve3']['initial_state']  # initial valve state
+valve3_timer_on = json_data['valve3']['time_on']   # minutes
+valve3_timer_off = json_data['valve3']['time_off']   # minutes
 
 #### VALVE 4 #######
-valve4_state = False  # initial valve state
-valve4_timer_on = 1  # minutes
-valve4_timer_off = 5  # minutes
+valve4_state = json_data['valve4']['initial_state']  # initial valve state
+valve4_timer_on = json_data['valve4']['time_on']   # minutes
+valve4_timer_off = json_data['valve4']['time_off']   # minutes
 
 proccessed_Fs = ['F1 = N2','F2 = SF6','F3 = SO2','F4 = EVAC','F5 = TOR', 'F6 = ', 'F7 = ' , 'F8 = ']
 
