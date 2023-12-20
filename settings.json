@@ -11,8 +11,8 @@
   "valve2": {
     "valve_description" : "Suckback",
     "initial_state" : false,
-    "time_on" : 5,
-    "time_off": 55,
+    "time_on" : 1,
+    "time_off": 3,
     "pause": true
   },
 
