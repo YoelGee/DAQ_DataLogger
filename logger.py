@@ -92,6 +92,8 @@ valve3_timer_off = json_data['valve3']['time_off']   # minutes
 valve4_state = json_data['valve4']['initial_state']  # initial valve state
 valve4_timer_on = json_data['valve4']['time_on']   # minutes
 valve4_timer_off = json_data['valve4']['time_off']   # minutes
+valve_pause = [json_data[f'valve{i+1}']['pause'] for i in range(0, 4)]
+print(valve_pause)
 def process_equation(equation):
     # Define a regular expression pattern to match the mx + b format
     pattern = re.compile(r'([-+]?\d*\.?\d*)\s*x\s*([-+]?\d*\.?\d*)')
@@ -225,7 +227,7 @@ prv_button = Button(prv_button_ax, 'Previous')
 prv_button.on_clicked(prev_button)
 # valve1_timer = dt.now()
 # valve2_timer = dt.now()
-valve_start_timer = [dt.now(), dt.now(), dt.now()]
+valve_start_timer = [dt.now(), dt.now(), dt.now(), dt.now()]
 valve_duration = [valve1_timer_on if valve1_state else valve1_timer_off, 
                   valve2_timer_on if valve2_state else valve2_timer_off,
                   valve3_timer_on if valve3_state else valve3_timer_off,
@@ -234,6 +236,8 @@ valve_states = [valve1_state if len(valve_in_use) > 0 else False,
                 valve2_state if len(valve_in_use) > 1 else False, 
                 valve3_state if len(valve_in_use) > 2 else False, 
                 valve4_state if len(valve_in_use) > 3 else False]
+valve_pause = [json_data[f'valve{i+1}']['pause'] for i in range(0, 4)]
+print(valve_pause)
 valve_timer_on = [valve1_timer_on, valve2_timer_on, valve3_timer_on, valve4_timer_on]
 valve_timer_off = [valve1_timer_off, valve2_timer_off, valve2_timer_off, valve3_timer_off]
 changed_state = True
@@ -269,8 +273,13 @@ while True:
             file_name = f"{folder_path}/data_{time_str}.csv"
             create_csv_file(file_name)
         for i in range(0, len(valve_in_use)):
+            if valve_pause[valve_in_use[i] - 1] and not valve_states[valve_in_use[i] - 1]:
+                for j in range(0, len(valve_in_use)):
+                    if valve_states[valve_in_use[j] - 1] and valve_in_use[j] != valve_in_use[i]:
+                        valve_start_timer[valve_in_use[i] - 1] = dt.now()
+                        print(f"pause {valve_in_use[i]} timer")
             if dt.now() - valve_start_timer[valve_in_use[i] - 1] >= td(minutes=valve_duration[i]):
-                valve_states[valve_in_use[i] - 1] = not valve_states[i]
+                valve_states[valve_in_use[i] - 1] = not valve_states[valve_in_use[i] - 1]
                 valve_duration[valve_in_use[i] - 1] = valve_timer_on[valve_in_use[i] - 1] if valve_states[valve_in_use[i] - 1] else valve_timer_off[valve_in_use[i] - 1]
                 valve_start_timer[valve_in_use[i] - 1] = dt.now()
                 changed_state = True
