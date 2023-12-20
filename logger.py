@@ -15,7 +15,7 @@ import os
 from datetime import datetime as dt
 from datetime import timedelta as td
 import csv
-import threading
+import re
 
 
 '''
@@ -92,19 +92,48 @@ valve3_timer_off = json_data['valve3']['time_off']   # minutes
 valve4_state = json_data['valve4']['initial_state']  # initial valve state
 valve4_timer_on = json_data['valve4']['time_on']   # minutes
 valve4_timer_off = json_data['valve4']['time_off']   # minutes
+def process_equation(equation):
+    # Define a regular expression pattern to match the mx + b format
+    pattern = re.compile(r'([-+]?\d*\.?\d*)\s*x\s*([-+]?\d*\.?\d*)')
 
-proccessed_Fs = ['F1 = N2','F2 = SF6','F3 = SO2','F4 = EVAC','F5 = TOR', 'F6 = ', 'F7 = ' , 'F8 = ']
+    # Search for the pattern in the equation
+    match = pattern.search(equation)
 
+    if match:
+        # Extract the values of m and b from the matched groups
+        m = float(match.group(1)) if match.group(1) else 1.0
+        b = float(match.group(2)) if match.group(2) else 0.0
+        return m, b
+    else:
+        # If no match is found, return None for both m and b
+        return None, None
+m = []
+b = []
+Fs_name = []
+units = []
+standard_unit = json_data['standard_unit']
+for i in range(0, len(analog_chan)):
+    str = json_data[f'channel_{analog_chan[i]}']['formula']
+    #print(f'channel_{analog_chan[i]}')
+    #print(str)
+    m_temp, b_temp = process_equation(str)
+    m.append(m_temp)
+    b.append(m_temp)
+    Fs_name.append(json_data[f'channel_{analog_chan[i]}']['name'])
+    unit = json_data[f'channel_{analog_chan[i]}']['units']
+    if unit == standard_unit or (unit != 'mL/min' and unit != 'L/min'):
+        units.append([1, unit])
+    elif standard_unit == 'L/min': #means channel units mL and standard is L
+        units.append([0.001, standard_unit])
+    else: #means channel units L and standard is mL
+        units.append([1000, standard_unit])
+#proccessed_Fs = ['F1 = N2','F2 = SF6','F3 = SO2','F4 = EVAC','F5 = TOR', 'F6 = ', 'F7 = ' , 'F8 = ']
+print(analog_chan, Fs_name, m, b, units)
 def proccess_channel(data):
-    process_1 = [1.0646 * x + 0.0013 for x in data[0]] # N_2
-    process_2 = [21.468 * x - 0.3443 for x in data[1]] # SF_6
-    process_3 = [x for x in data[3]]
-    process_4 = [x for x in data[6]]
-    process_5 = [6.8967 * x + 0.185 for x in data[4]] # EVAC
-    process_6 = [10.468 * x + 0.8423 for x in data[5]] # SO_2
-    process_7 = [x for x in data[6]]
-    process_8 = [20.00 * x for x in data[7]] # TOR
-    return [process_1, process_2, process_3, process_4, process_5, process_6, process_7, process_8]
+    process = []
+    for i in range(0, len(analog_chan)):
+        process.append([(m[i] * x + b[i])* units[i][0] for x in data[i]])
+    return process
 
 def valve_state_conversion(valve1, valve2, valve3, valve4):
         binary_array = [valve1, 0, valve2, 0, valve3, 0, valve4, 0]
@@ -120,7 +149,7 @@ def create_csv_file(file_name):
     with open(file_name, 'w', newline='') as csv_file:
         # Your CSV writing code here, for example:
         csv_writer = csv.writer(csv_file)
-        csv_writer.writerow(['Date/Time'] +  [f'Channel_{i}' for i in range(0, len(analog_chan))] + proccessed_Fs)
+        csv_writer.writerow(['Date/Time'] +  [f'Channel_{analog_chan[i]}' for i in range(0, len(analog_chan))] + Fs_name)
 
     print(f"CSV file '{file_name}' created.")
 
@@ -144,7 +173,7 @@ create_csv_file(file_name)
 # Configure NI DAQmx settings
 task = nidaqmx.Task()
 for i in range(0, len(analog_chan)):
-    task.ai_channels.add_ai_voltage_chan(f"Dev1/ai{analog_chan[i]}", terminal_config=TerminalConfiguration.RSE)
+    task.ai_channels.add_ai_voltage_chan(f"Dev1/ai{analog_chan[i] - 1}", terminal_config=TerminalConfiguration.RSE)
 task.timing.cfg_samp_clk_timing(rate=100, sample_mode=AcquisitionType.CONTINUOUS)
 # Initialize variables for data storage and plotting
 num_samples = int(task.timing.samp_clk_rate * history_length)
@@ -165,8 +194,8 @@ def next_button(command):
         plt_channel = plt_channel + 1
     else:
         plt_channel = 0
-    ax.set_title(f'F{plt_channel + 1}')
-    ax.set_ylabel(f'{proccessed_Fs[plt_channel]}')
+    ax.set_title(f'F{analog_chan[plt_channel]}(Channel {analog_chan[plt_channel]})')
+    ax.set_ylabel(f'{Fs_name[plt_channel]}({units[plt_channel][1]})')
     
 
 def prev_button(command):
@@ -176,16 +205,16 @@ def prev_button(command):
         plt_channel = len(analog_chan) - 1
     else:
         plt_channel = plt_channel - 1
-    ax.set_title(f'F{plt_channel + 1}')
-    ax.set_ylabel(f'{proccessed_Fs[plt_channel]}')
+    ax.set_title(f'F{analog_chan[plt_channel]}(Channel {analog_chan[plt_channel]})')
+    ax.set_ylabel(f'{Fs_name[plt_channel]}({units[plt_channel][1]})')
 
 # Create the plot
 plt.ion()  # Enable interactive mode for dynamic updating
 fig, ax = plt.subplots()
 line, = ax.plot(time_values, np.zeros(num_samples))
 ax.set_xlabel('Time (s)')
-ax.set_ylabel(f'{proccessed_Fs[plt_channel]}')
-ax.set_title(f'F{plt_channel + 1}')
+ax.set_title(f'F{analog_chan[plt_channel]}(Channel {analog_chan[plt_channel]})')
+ax.set_ylabel(f'{Fs_name[plt_channel]}({units[plt_channel][1]})')
 task.start()
 nxt_button_ax = plt.axes([0.85, 0.9, 0.1, 0.04])  # [left, bottom, width, height]
 nxt_button = Button(nxt_button_ax, 'Next')
@@ -213,7 +242,9 @@ while True:
     try:
         new_data = task.read(number_of_samples_per_channel=samples_per_channel)  # Read 50 samples
         values = [new_data[i][-1] for i in range(0, len(analog_chan))]
+        #print(new_data)
         processed_data = proccess_channel(new_data)
+        #print(processed_data)
         processed_values = [processed_data[i][-1] for i in range(0, len(analog_chan))]
         #print(processed_data)
         timestamp = time.time()
@@ -261,7 +292,7 @@ while True:
             task = nidaqmx.Task()
 
             for i in range(0, len(analog_chan)):
-                task.ai_channels.add_ai_voltage_chan(f"Dev1/ai{analog_chan[i]}", terminal_config=TerminalConfiguration.RSE)
+                task.ai_channels.add_ai_voltage_chan(f"Dev1/ai{analog_chan[i] - 1}", terminal_config=TerminalConfiguration.RSE)
             task.timing.cfg_samp_clk_timing(rate=100, sample_mode=AcquisitionType.CONTINUOUS)
         
     except (KeyboardInterrupt,SystemExit):
