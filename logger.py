@@ -283,7 +283,7 @@ while True:
                 valve_duration[valve_in_use[i] - 1] = valve_timer_on[valve_in_use[i] - 1] if valve_states[valve_in_use[i] - 1] else valve_timer_off[valve_in_use[i] - 1]
                 valve_start_timer[valve_in_use[i] - 1] = dt.now()
                 changed_state = True
-                print(dt.now(), f'Switching Valve{valve_in_use[i]}')
+                print(dt.now(), f'Switching Valve{valve_in_use[i]} from {not valve_states[valve_in_use[i] - 1]} to {valve_states[valve_in_use[i] - 1]}')
         if changed_state:
             changed_state = False
             task.stop()
