@@ -196,7 +196,7 @@ def next_button(command):
         plt_channel = plt_channel + 1
     else:
         plt_channel = 0
-    ax.set_title(f'F{analog_chan[plt_channel]}(Channel {analog_chan[plt_channel]})')
+    ax.set_title(f'{Fs_name[plt_channel]}(Channel {analog_chan[plt_channel]})')
     ax.set_ylabel(f'{Fs_name[plt_channel]}({units[plt_channel][1]})')
     
 
@@ -207,7 +207,7 @@ def prev_button(command):
         plt_channel = len(analog_chan) - 1
     else:
         plt_channel = plt_channel - 1
-    ax.set_title(f'F{analog_chan[plt_channel]}(Channel {analog_chan[plt_channel]})')
+    ax.set_title(f'{Fs_name[plt_channel]}(Channel {analog_chan[plt_channel]})')
     ax.set_ylabel(f'{Fs_name[plt_channel]}({units[plt_channel][1]})')
 
 # Create the plot
@@ -215,7 +215,7 @@ plt.ion()  # Enable interactive mode for dynamic updating
 fig, ax = plt.subplots()
 line, = ax.plot(time_values, np.zeros(num_samples))
 ax.set_xlabel('Time (s)')
-ax.set_title(f'F{analog_chan[plt_channel]}(Channel {analog_chan[plt_channel]})')
+ax.set_title(f'{Fs_name[plt_channel]}(Channel {analog_chan[plt_channel]})')
 ax.set_ylabel(f'{Fs_name[plt_channel]}({units[plt_channel][1]})')
 task.start()
 nxt_button_ax = plt.axes([0.85, 0.9, 0.1, 0.04])  # [left, bottom, width, height]
@@ -278,12 +278,12 @@ while True:
                     if valve_states[valve_in_use[j] - 1] and valve_in_use[j] != valve_in_use[i]:
                         valve_start_timer[valve_in_use[i] - 1] = dt.now()
                         #print(f"pause {valve_in_use[i]} timer")
-            if ( td(minutes=valve_duration[valve_in_use[i] - 1]) - td(sec=0.1)) <= (dt.now() - valve_start_timer[valve_in_use[i] - 1]) <= (td(minutes=valve_duration[valve_in_use[i] - 1]) + td(sec=0.1)):
+            if dt.now() - valve_start_timer[valve_in_use[i] - 1] >= td(minutes=valve_duration[valve_in_use[i] - 1]):
                 valve_states[valve_in_use[i] - 1] = not valve_states[valve_in_use[i] - 1]
                 valve_duration[valve_in_use[i] - 1] = valve_timer_on[valve_in_use[i] - 1] if valve_states[valve_in_use[i] - 1] else valve_timer_off[valve_in_use[i] - 1]
                 valve_start_timer[valve_in_use[i] - 1] = dt.now()
                 changed_state = True
-                print(dt.now(), f'Switching Valve{valve_in_use[i]} from {not valve_states[valve_in_use[i] - 1]} to {valve_states[valve_in_use[i] - 1]}')
+                print(dt.now(), f'Switching Valve{valve_in_use[i]}')
         if changed_state:
             changed_state = False
             task.stop()

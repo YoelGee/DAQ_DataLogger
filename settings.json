@@ -4,7 +4,7 @@
     "valve_description" : "background",
     "initial_state" : true,
     "time_on" : 1,
-    "time_off": 11,
+    "time_off": 5,
     "pause": false
   },
 
@@ -12,7 +12,7 @@
     "valve_description" : "Suckback",
     "initial_state" : false,
     "time_on" : 1,
-    "time_off": 3,
+    "time_off": 1,
     "pause": true
   },
 
