@@ -207,7 +207,7 @@ prv_button.on_clicked(prev_button)
 # valve1_timer = dt.now()
 # valve2_timer = dt.now()
 valve_start_timer = [dt.now(), dt.now(), dt.now(), dt.now()]
-valve_timing = [json_data[f'valve{i + 1}']['timing'] if len(json_data[f'valve{i + 1}']['timing']) > 0 else [0, False] for i in range(0, 4)]
+valve_timing = [json_data[f'valve{i + 1}']['timing'] if len(json_data[f'valve{i + 1}']['timing']) > 0 else [[0, False]] for i in range(0, 4)]
 valve_counters = [0,0,0,0]
 changed_state = True
 print(dt.now(), "Starting time")
