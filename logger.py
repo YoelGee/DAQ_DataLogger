@@ -73,27 +73,6 @@ analog_chan = json_data['analog_channels'] #indicate which channels are in use
 #num_of_valves = 3  # indicate num of valves in use
 valve_in_use = json_data['valves_in_use']
 
-#### VALVE 1 ####### (Pneumatic valve)
-valve1_state = json_data['valve1']['initial_state']  # initial valve state
-valve1_timer_on = json_data['valve1']['time_on']   # minutes
-valve1_timer_off = json_data['valve1']['time_off']   # minutes
-
-#### VALVE 2 ####### (Diversion/Suckback/SO2)
-valve2_state = json_data['valve2']['initial_state']  # initial valve state
-valve2_timer_on = json_data['valve2']['time_on']   # minutes
-valve2_timer_off = json_data['valve2']['time_off']   # minutes
-
-#### VALVE 3 #######
-valve3_state = json_data['valve3']['initial_state']  # initial valve state
-valve3_timer_on = json_data['valve3']['time_on']   # minutes
-valve3_timer_off = json_data['valve3']['time_off']   # minutes
-
-#### VALVE 4 #######
-valve4_state = json_data['valve4']['initial_state']  # initial valve state
-valve4_timer_on = json_data['valve4']['time_on']   # minutes
-valve4_timer_off = json_data['valve4']['time_off']   # minutes
-valve_pause = [json_data[f'valve{i+1}']['pause'] for i in range(0, 4)]
-print(valve_pause)
 def process_equation(equation):
     # Define a regular expression pattern to match the mx + b format
     pattern = re.compile(r'([-+]?\d*\.?\d*)\s*x\s*([-+]?\d*\.?\d*)')
@@ -228,18 +207,8 @@ prv_button.on_clicked(prev_button)
 # valve1_timer = dt.now()
 # valve2_timer = dt.now()
 valve_start_timer = [dt.now(), dt.now(), dt.now(), dt.now()]
-valve_duration = [valve1_timer_on if valve1_state else valve1_timer_off, 
-                  valve2_timer_on if valve2_state else valve2_timer_off,
-                  valve3_timer_on if valve3_state else valve3_timer_off,
-                  valve4_timer_on if valve4_state else valve4_timer_off]
-valve_states = [valve1_state if len(valve_in_use) > 0 else False, 
-                valve2_state if len(valve_in_use) > 1 else False, 
-                valve3_state if len(valve_in_use) > 2 else False, 
-                valve4_state if len(valve_in_use) > 3 else False]
-valve_pause = [json_data[f'valve{i+1}']['pause'] for i in range(0, 4)]
-print(valve_pause)
-valve_timer_on = [valve1_timer_on, valve2_timer_on, valve3_timer_on, valve4_timer_on]
-valve_timer_off = [valve1_timer_off, valve2_timer_off, valve2_timer_off, valve3_timer_off]
+valve_timing = [json_data[f'valve{i + 1}']['timing'] if len(json_data[f'valve{i + 1}']['timing']) > 0 else [0, False] for i in range(0, 4)]
+valve_counters = [0,0,0,0]
 changed_state = True
 print(dt.now(), "Starting time")
 while True:
@@ -273,17 +242,15 @@ while True:
             file_name = f"{folder_path}/data_{time_str}.csv"
             create_csv_file(file_name)
         for i in range(0, len(valve_in_use)):
-            if valve_pause[valve_in_use[i] - 1] and not valve_states[valve_in_use[i] - 1]:
-                for j in range(0, len(valve_in_use)):
-                    if valve_states[valve_in_use[j] - 1] and valve_in_use[j] != valve_in_use[i]:
-                        valve_start_timer[valve_in_use[i] - 1] = dt.now()
-                        #print(f"pause {valve_in_use[i]} timer")
-            if dt.now() - valve_start_timer[valve_in_use[i] - 1] >= td(minutes=valve_duration[valve_in_use[i] - 1]):
-                valve_states[valve_in_use[i] - 1] = not valve_states[valve_in_use[i] - 1]
-                valve_duration[valve_in_use[i] - 1] = valve_timer_on[valve_in_use[i] - 1] if valve_states[valve_in_use[i] - 1] else valve_timer_off[valve_in_use[i] - 1]
+            if dt.now() - valve_start_timer[valve_in_use[i] - 1] >= td(minutes=valve_timing[valve_in_use[i] - 1][valve_counters[valve_in_use[i] - 1]][0]):
                 valve_start_timer[valve_in_use[i] - 1] = dt.now()
-                changed_state = True
-                print(dt.now(), f'Switching Valve{valve_in_use[i]} from {not valve_states[valve_in_use[i] - 1]} to {valve_states[valve_in_use[i] - 1]}')
+                prev_state = valve_timing[valve_in_use[i] - 1][valve_counters[valve_in_use[i] - 1]][1]
+                valve_counters[valve_in_use[i] - 1] = 0 if len(valve_timing[valve_in_use[i] - 1]) - 1 == valve_counters[valve_in_use[i] - 1] else valve_counters[valve_in_use[i] - 1] + 1
+                new_state = valve_timing[valve_in_use[i] - 1][valve_counters[valve_in_use[i] - 1]][1]
+                #changed_state = True if new_state != prev_state else changed_state
+                if(prev_state != new_state):
+                    changed_state = True
+                    print(dt.now(), f'Switching Valve{valve_in_use[i]} from {prev_state} to {new_state}')
         if changed_state:
             changed_state = False
             task.stop()
@@ -292,10 +259,10 @@ while True:
             task.do_channels.add_do_chan(
                     "Dev1/port1/line0:7", line_grouping=LineGrouping.CHAN_FOR_ALL_LINES)
             task.start()
-            task.write(valve_state_conversion(valve_states[0], 
-                                              valve_states[1], 
-                                              valve_states[2], 
-                                              valve_states[3]), auto_start=True)
+            task.write(valve_state_conversion(valve_timing[0][valve_counters[0]][1], 
+                                              valve_timing[1][valve_counters[1]][1], 
+                                              valve_timing[2][valve_counters[2]][1], 
+                                              valve_timing[3][valve_counters[3]][1]), auto_start=True)
             task.stop()
             task.close()
             task = nidaqmx.Task()

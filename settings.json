@@ -2,34 +2,24 @@
   "valves_in_use": [1,2],
   "valve1": {
     "valve_description" : "background",
-    "initial_state" : true,
-    "time_on" : 1,
-    "time_off": 2.97,
-    "pause": false
+    "timing": [[1, true], [11, false]]
   },
 
   "valve2": {
     "valve_description" : "Suckback",
-    "initial_state" : false,
-    "time_on" : 1,
-    "time_off": 1,
-    "pause": true
+    "timing": [[4, false], [1, true], [3, false], [1, true],[3, false]]
   },
 
   "valve3": {
     "valve_description" : "",
     "initial_state" : false,
-    "time_on" : 1,
-    "time_off": 9,
-    "pause": false
+    "timing" : []
   },
   
   "valve4": {
     "valve_description" : "",
     "initial_state" : false,
-    "time_on" : 5,
-    "time_off": 55,
-    "pause": false
+    "timing": []
   },
   "analog_channels": [1,2,3,8],
   "standard_unit": "mL/min",
