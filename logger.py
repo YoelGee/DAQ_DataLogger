@@ -16,63 +16,29 @@ from datetime import datetime as dt
 from datetime import timedelta as td
 import csv
 import re
-
-
-'''
-****************** INSTRUCTIONS ******************
-
-csv_create_file_timer - How often a new CSV file is created
-csv_datalog_freq - how often the datas are logged into csv file (default 2points every second )
-history_length - how much information is displayed over a certain amount of time (900s = 15 min)
-num_of_channels - how many analog channels we are using on the device
-samples_per_channel - number of samples device returns every interval
-
-valve1_timer_on - ontrolls the time on for valve 1
-valve1_timer_off - controlls the time off for valve 1 
-valve2_timer_on - controlls the time on for valve 2 
-valve2_timer_off - controlls the time off for valve 2 
-valve1_state - initial valve 1 state
-valve2_state - initial valve 2 state
-
-****************************************************
-'''
-
-
-
-'''
-****************** INSTRUCTIONS ******************
-
-csv_create_file_timer - How often a new CSV file is created
-csv_datalog_freq - how often the datas are logged into csv file (default 2points every second )
-history_length - how much information is displayed over a certain amount of time (900s = 15 min)
-num_of_channels - how many analog channels we are using on the device
-samples_per_channel - number of samples device returns every interval
-
-valve1_timer_on - ontrolls the time on for valve 1
-valve1_timer_off - controlls the time off for valve 1 
-valve2_timer_on - controlls the time on for valve 2 
-valve2_timer_off - controlls the time off for valve 2 
-valve1_state - initial valve 1 state
-valve2_state - initial valve 2 state
-
-****************************************************
-'''
-
 import json
+
 with open('settings.json') as f: 
     json_data = json.load(f) 
 
-csv_create_file_timer = 1  # hours
-csv_datalog_freq = 0.47 # seconds
-history_length = 900  # seconds
-samples_per_channel = 50
+# grabs settings from the settings.json file
+csv_create_file_timer = json_data['csv_settings']['csv_create_file_time_in_hours'] 
+csv_datalog_freq = 1/json_data['csv_settings']['csv_data_logging_freq'] 
 
-#num_of_channels = 5 #indicate number of channels
-analog_chan = json_data['analog_channels'] #indicate which channels are in use
+history_length = json_data['graph_settings']['graph_window_time_in_seconds']  
+samples_per_channel = json_data['graph_settings']['samples_per_channel']
 
-#num_of_valves = 3  # indicate num of valves in use
-valve_in_use = json_data['valves_in_use']
+valve_in_use = json_data['valve_settings']['valves_in_use']
+valve_timing = [json_data['valve_settings'][f'valve{i + 1}']['timing'] 
+                if len(json_data['valve_settings'][f'valve{i + 1}']['timing']) > 0 
+                else [[0, False]] for i in range(0, 4)]
 
+
+analog_chan = json_data['analog_settings']['analog_channels'] 
+standard_unit = json_data['analog_settings']['standard_unit']
+
+
+# this function takes the formula mx+b as a string and gets the m and b
 def process_equation(equation):
     # Define a regular expression pattern to match the mx + b format
     pattern = re.compile(r'([-+]?\d*\.?\d*)\s*x\s*([-+]?\d*\.?\d*)')
@@ -92,30 +58,35 @@ m = []
 b = []
 Fs_name = []
 units = []
-standard_unit = json_data['standard_unit']
+#loops through settting file and gets analog channel data
 for i in range(0, len(analog_chan)):
-    str = json_data[f'channel_{analog_chan[i]}']['formula']
-    #print(f'channel_{analog_chan[i]}')
-    #print(str)
+    #gets the formula of the channel
+    str = json_data['analog_settings'][f'channel_{analog_chan[i]}']['formula']
+    #gets the m and b of the formula and stores it into a list
     m_temp, b_temp = process_equation(str)
     m.append(m_temp)
     b.append(m_temp)
-    Fs_name.append(json_data[f'channel_{analog_chan[i]}']['name'])
-    unit = json_data[f'channel_{analog_chan[i]}']['units']
-    if unit == standard_unit or (unit != 'mL/min' and unit != 'L/min'):
+    #gets the channel name
+    Fs_name.append(json_data['analog_settings'][f'channel_{analog_chan[i]}']['name'])
+    #gets the unit of the formula
+    unit = json_data['analog_settings'][f'channel_{analog_chan[i]}']['units']
+    #checks if the units match with the standard units L/min or sccm
+    if unit == standard_unit or (unit != 'mL/min' and unit != 'L/min' and unit != 'sccm'):
         units.append([1, unit])
     elif standard_unit == 'L/min': #means channel units mL and standard is L
         units.append([0.001, standard_unit])
-    else: #means channel units L and standard is mL
+    else: #means channel units L and standard is mL/min or sccm
         units.append([1000, standard_unit])
-#proccessed_Fs = ['F1 = N2','F2 = SF6','F3 = SO2','F4 = EVAC','F5 = TOR', 'F6 = ', 'F7 = ' , 'F8 = ']
 print(analog_chan, Fs_name, m, b, units)
+
+#function converts voltage to flow using the equations
 def proccess_channel(data):
     process = []
     for i in range(0, len(analog_chan)):
         process.append([(m[i] * x + b[i])* units[i][0] for x in data[i]])
     return process
 
+#function is used to convert the 4 valve states into a decimal value which is used to communicate with nidaq device
 def valve_state_conversion(valve1, valve2, valve3, valve4):
         binary_array = [valve1, 0, valve2, 0, valve3, 0, valve4, 0]
         #print(binary_array)
@@ -125,7 +96,7 @@ def valve_state_conversion(valve1, valve2, valve3, valve4):
             decimal_value += bit * (2 ** i)
         #print(decimal_value)
         return decimal_value
-
+# creates csv file and writes out a header
 def create_csv_file(file_name):
     with open(file_name, 'w', newline='') as csv_file:
         # Your CSV writing code here, for example:
@@ -134,8 +105,7 @@ def create_csv_file(file_name):
 
     print(f"CSV file '{file_name}' created.")
 
-
-
+#logs data to the csv file
 def log_data(f_name, data):
     with open(f_name, 'a', newline='') as csv_file:
         csv_writer = csv.writer(csv_file)
@@ -204,10 +174,8 @@ nxt_button.on_clicked(next_button)
 prv_button_ax = plt.axes([0.7, 0.9, 0.1, 0.04])  # [left, bottom, width, height]
 prv_button = Button(prv_button_ax, 'Previous')
 prv_button.on_clicked(prev_button)
-# valve1_timer = dt.now()
-# valve2_timer = dt.now()
+
 valve_start_timer = [dt.now(), dt.now(), dt.now(), dt.now()]
-valve_timing = [json_data[f'valve{i + 1}']['timing'] if len(json_data[f'valve{i + 1}']['timing']) > 0 else [[0, False]] for i in range(0, 4)]
 valve_counters = [0,0,0,0]
 changed_state = True
 print(dt.now(), "Starting time")
@@ -215,11 +183,8 @@ while True:
     try:
         new_data = task.read(number_of_samples_per_channel=samples_per_channel)  # Read 50 samples
         values = [new_data[i][-1] for i in range(0, len(analog_chan))]
-        #print(new_data)
         processed_data = proccess_channel(new_data)
-        #print(processed_data)
         processed_values = [processed_data[i][-1] for i in range(0, len(analog_chan))]
-        #print(processed_data)
         timestamp = time.time()
         data_buffer.extend(processed_data[plt_channel])
         time_buffer.extend([timestamp] * len(processed_data[plt_channel]))
@@ -272,6 +237,13 @@ while True:
             task.timing.cfg_samp_clk_timing(rate=100, sample_mode=AcquisitionType.CONTINUOUS)
         
     except (KeyboardInterrupt,SystemExit):
+        task.stop()
+        task.close()
+        task = nidaqmx.Task()
+        task.do_channels.add_do_chan(
+                "Dev1/port1/line0:7", line_grouping=LineGrouping.CHAN_FOR_ALL_LINES)
+        task.start()            
+        task.write(valve_state_conversion(False, False, False, False), auto_start=True)
         task.stop()
         task.close()
         plt.ioff()  # Turn off interactive mode

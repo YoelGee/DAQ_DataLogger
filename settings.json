@@ -1,66 +1,83 @@
 {
-  "valves_in_use": [1,2],
-  "valve1": {
-    "valve_description" : "background",
-    "timing": [[1, true], [11, false]]
+  "csv_settings" : {
+    "csv_create_file_time_in_hours" : 1,
+    "csv_data_logging_freq" : 2
   },
 
-  "valve2": {
-    "valve_description" : "Suckback",
-    "timing": [[4, false], [1, true], [3, false], [1, true],[3, false]]
+  "graph_settings" : {
+    "samples_per_channel" : 50,
+    "graph_window_time_in_seconds" : 900
   },
 
-  "valve3": {
-    "valve_description" : "",
-    "initial_state" : false,
-    "timing" : []
+
+  "valve_settings" : {
+
+    "valves_in_use": [1,2],
+    "valve1": {
+      "valve_description" : "background",
+      "timing": [[1, true], [11, false]]
+    },
+
+    "valve2": {
+      "valve_description" : "Suckback",
+      "timing": [[4, false], [1, true], [3, false], [1, true],[3, false]]
+    },
+
+    "valve3": {
+      "valve_description" : "",
+      "initial_state" : false,
+      "timing" : []
+    },
+    
+    "valve4": {
+      "valve_description" : "",
+      "initial_state" : false,
+      "timing": []
+    }
   },
   
-  "valve4": {
-    "valve_description" : "",
-    "initial_state" : false,
-    "timing": []
-  },
-  "analog_channels": [1,2,3,8],
-  "standard_unit": "mL/min",
-  "channel_1" : {
-    "name" : "N2",
-    "formula" : "1.0646x+0.0013",
-    "units" : "L/min"
-  },
-  "channel_2" : {
-    "name" : "SF6",
-    "formula" : "21.468x-0.3443",
-    "units" : "mL/min"
-  },
-  "channel_3" : {
-    "name" : "S02",
-    "formula" : "x",
-    "units" : "mL/min"
-  },
-  "channel_4" : {
-    "name" : "EVAC",
-    "formula" : "x",
-    "units" : "L/min"
-  },
-  "channel_5" : {
-    "name" : "",
-    "formula" : "6.8967x+0.185",
-    "units" : "L/min"
-  },
-  "channel_6" : {
-    "name" : "",
-    "formula" : "10.468x+0.8423",
-    "units" : "L/min"
-  },
-  "channel_7" : {
-    "name" : "",
-    "formula" : "x",
-    "units" : "L/min"
-  },
-  "channel_8" : {
-    "name" : "",
-    "formula" : "10.00x",
-    "units" : "tor"
+  "analog_settings" : {
+    "analog_channels": [1,2,3,8],
+    "standard_unit": "sccm",
+    "channel_1" : {
+      "name" : "N2",
+      "formula" : "1.0646x+0.0013",
+      "units" : "L/min"
+    },
+    "channel_2" : {
+      "name" : "SF6",
+      "formula" : "21.468x-0.3443",
+      "units" : "sccm"
+    },
+    "channel_3" : {
+      "name" : "S02",
+      "formula" : "10.468x+84.23",
+      "units" : "sccm"
+    },
+    "channel_4" : {
+      "name" : "EVAC",
+      "formula" : "6.8967x+0.185",
+      "units" : "sccm"
+    },
+    "channel_5" : {
+      "name" : "",
+      "formula" : "",
+      "units" : ""
+    },
+    "channel_6" : {
+      "name" : "",
+      "formula" : "",
+      "units" : ""
+    },
+    "channel_7" : {
+      "name" : "",
+      "formula" : "",
+      "units" : ""
+    },
+    "channel_8" : {
+      "name" : "Baratron",
+      "formula" : "10.00x",
+      "units" : "torr"
+    }
   }
 }
