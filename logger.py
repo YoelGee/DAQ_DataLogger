@@ -101,7 +101,7 @@ def create_csv_file(file_name):
     with open(file_name, 'w', newline='') as csv_file:
         # Your CSV writing code here, for example:
         csv_writer = csv.writer(csv_file)
-        csv_writer.writerow(['Date/Time'] +  [f'Channel_{analog_chan[i]}' for i in range(0, len(analog_chan))] + Fs_name)
+        csv_writer.writerow(['Date/Time'] +  [f'Channel_{analog_chan[i]}' for i in range(0, len(analog_chan))] + Fs_name +  [f'Valve{valve_in_use[i]}_State' for i in range(0, len(valve_in_use))])
 
     print(f"CSV file '{file_name}' created.")
 
@@ -194,7 +194,7 @@ while True:
         line.set_xdata(-time_diff[mask])
         line.set_ydata(np.array(data_buffer)[mask])
         now = dt.now()
-        current_data = [dt.now().strftime("%Y-%m-%d %H:%M:%S")] + values + processed_values
+        current_data = [dt.now().strftime("%Y-%m-%d %H:%M:%S")] + values + processed_values + [valve_timing[valve_in_use[i] - 1][valve_counters[valve_in_use[i] - 1]][1] for i in range(0, len(valve_in_use))]
         ax.relim()
         ax.autoscale_view()
         plt.pause(0.01)  # Pause to allow the plot to update
@@ -216,6 +216,7 @@ while True:
                 if(prev_state != new_state):
                     changed_state = True
                     print(dt.now(), f'Switching Valve{valve_in_use[i]} from {prev_state} to {new_state}')
+
         if changed_state:
             changed_state = False
             task.stop()
