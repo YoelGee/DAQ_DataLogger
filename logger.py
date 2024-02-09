@@ -194,7 +194,7 @@ while True:
         line.set_xdata(-time_diff[mask])
         line.set_ydata(np.array(data_buffer)[mask])
         now = dt.now()
-        current_data = [dt.now().strftime("%Y-%m-%d %H:%M:%S")] + values + processed_values + [valve_timing[valve_in_use[i] - 1][valve_counters[valve_in_use[i] - 1]][1] for i in range(0, len(valve_in_use))]
+        current_data = [dt.now().strftime("%Y-%m-%d %H:%M:%S")] + values + processed_values + [int(valve_timing[valve_in_use[i] - 1][valve_counters[valve_in_use[i] - 1]][1]) for i in range(0, len(valve_in_use))]
         ax.relim()
         ax.autoscale_view()
         plt.pause(0.01)  # Pause to allow the plot to update

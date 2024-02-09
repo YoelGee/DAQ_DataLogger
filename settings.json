@@ -15,12 +15,12 @@
     "valves_in_use": [1,2],
     "valve1": {
       "valve_description" : "background",
-      "timing": [[.33333333, true], [2, false], [.33333333, true], [3.5, false], [.33333333, true], [2, false],[.33333333, true], [2, false]]
+      "timing": [[0.33333333, true], [2, false], [0.33333333, true], [3.5, false], [0.33333333, true], [2, false],[0.33333333, true], [2, false]]
     },
 
     "valve2": {
       "valve_description" : "Suckback",
-      "timing": [[4.1666666, false], [.5, true], [6.1666666, false]]
+      "timing": [[4.1666666, false], [0.5, true], [6.1666666, false]]
     },
 
     "valve3": {
