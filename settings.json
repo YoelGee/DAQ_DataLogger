@@ -37,7 +37,7 @@
   },
   
   "analog_settings" : {
-    "analog_channels": [1,2,3,8],
+    "analog_channels": [1,2,6,7,8],
     "standard_unit": "sccm",
     "channel_1" : {
       "name" : "N2",
@@ -51,7 +51,7 @@
     },
     "channel_3" : {
       "name" : "S02",
-      "formula" : "10.468x+84.23",
+      "formula" : "10.468x+0.8423",
       "units" : "sccm"
     },
     "channel_4" : {
@@ -65,19 +65,19 @@
       "units" : ""
     },
     "channel_6" : {
-      "name" : "",
-      "formula" : "",
-      "units" : ""
+      "name" : "SO2",
+      "formula" : "10.468x+0.8423",
+      "units" : "sccm"
     },
     "channel_7" : {
-      "name" : "",
-      "formula" : "",
-      "units" : ""
+      "name" : "EVAC",
+      "formula" : "6.8967x+0.185",
+      "units" : "l/min"
     },
     "channel_8" : {
       "name" : "Baratron",
-      "formula" : "10.00x",
-      "units" : "torr"
+      "formula" : "x",
+      "units" : "voltage(+1V?)"
     }
   }
 }

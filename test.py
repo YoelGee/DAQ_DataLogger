@@ -18,7 +18,7 @@ def process_equation(equation):
 import json
 with open('settings.json') as f: 
     json_data = json.load(f) 
-analog_chan = json_data['analog_channels'] #indicate which channels are in use
+#analog_chan = json_data['analog_channels'] #indicate which channels are in use
 # for i in range(0, len(analog_chan)):
 #     str = json_data[f'channel_{analog_chan[i]}']['formula']
 #     print(f'{json_data[f"channel_{analog_chan[i]}"]["name"]}(channel_{analog_chan[i]})')
@@ -29,21 +29,25 @@ m = []
 b = []
 Fs_name = []
 units = []
-standard_unit = json_data['standard_unit']
+analog_chan = json_data['analog_settings']['analog_channels'] 
+standard_unit = json_data['analog_settings']['standard_unit']
 for i in range(0, len(analog_chan)):
-    str = json_data[f'channel_{analog_chan[i]}']['formula']
-    #print(f'channel_{analog_chan[i]}')
-    #print(str)
+    str = json_data['analog_settings'][f'channel_{analog_chan[i]}']['formula']
     m_temp, b_temp = process_equation(str)
     m.append(m_temp)
-    b.append(m_temp)
-    Fs_name.append(json_data[f'channel_{analog_chan[i]}']['name'])
-    unit = json_data[f'channel_{analog_chan[i]}']['units']
-    if unit == standard_unit or (unit != 'mL/min' and unit != 'L/min'):
+    b.append(b_temp)
+    #gets the channel name
+    Fs_name.append(json_data['analog_settings'][f'channel_{analog_chan[i]}']['name'])
+    #gets the unit of the formula
+    unit = json_data['analog_settings'][f'channel_{analog_chan[i]}']['units']
+    #checks if the units match with the standard units L/min or sccm
+    if unit == standard_unit or (unit != 'mL/min' and unit != 'L/min' and unit != 'sccm'):
         units.append([1, unit])
     elif standard_unit == 'L/min': #means channel units mL and standard is L
         units.append([0.001, standard_unit])
-    else: #means channel units L and standard is mL
+    else: #means channel units L and standard is mL/min or sccm
         units.append([1000, standard_unit])
 
-print(analog_chan, Fs_name, m, b, units)
+for i in range(len(b)):
+    print(f'{m[i]}x+{b[i]}')
+#print(analog_chan, Fs_name, m, b, units)

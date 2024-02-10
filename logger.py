@@ -1,3 +1,4 @@
+
 '''
 Authors: Yoel Ghebrecristos and Alvin La
 Institution: University of California Irvine
@@ -65,7 +66,7 @@ for i in range(0, len(analog_chan)):
     #gets the m and b of the formula and stores it into a list
     m_temp, b_temp = process_equation(str)
     m.append(m_temp)
-    b.append(m_temp)
+    b.append(b_temp)
     #gets the channel name
     Fs_name.append(json_data['analog_settings'][f'channel_{analog_chan[i]}']['name'])
     #gets the unit of the formula
